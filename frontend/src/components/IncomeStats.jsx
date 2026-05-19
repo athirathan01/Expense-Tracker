@@ -13,13 +13,21 @@ const IncomeStats = ({ incomes }) => {
   });
   const thisMonthSum = thisMonthIncomes.reduce((sum, inc) => sum + Number(inc.Amount || 0), 0);
 
-  // 2. This Week Income (last 7 days)
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(now.getDate() - 7);
+  // 2. This Week Income (Monday to Sunday)
+  const monday = new Date(now);
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  monday.setDate(diff);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
   const thisWeekIncomes = incomes.filter(inc => {
     if (!inc.Income_Date) return false;
     const incDate = new Date(inc.Income_Date);
-    return incDate >= oneWeekAgo && incDate <= now;
+    return incDate >= monday && incDate <= sunday;
   });
   const thisWeekSum = thisWeekIncomes.reduce((sum, inc) => sum + Number(inc.Amount || 0), 0);
 
@@ -43,7 +51,7 @@ const IncomeStats = ({ incomes }) => {
       <div className="stat-card">
         <div className="stat-label">This week</div>
         <div className="stat-value" style={{ color: 'var(--green)' }}>₹{thisWeekSum.toLocaleString('en-IN')}</div>
-        <div className="stat-sub stat-dn">Last 7 days</div>
+        <div className="stat-sub stat-dn">Mon to Sun</div>
       </div>
       <div className="stat-card">
         <div className="stat-label">Monthly Target</div>
