@@ -1,0 +1,8 @@
+{
+  "name": "expense-tracker-vabuenso",
+  "framework": "React + Vite",
+  "build": {
+    "command": "npm run build",
+    "directory": "dist"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "functions": {
+    "source": "functions",
+    "targets": [
+      "ExpenseTrackerFunction"
+    ],
+    "ignore": []
+  },
+  "client": {
+    "source": "frontend/dist"
+  },
+  "slate": [
+    {
+      "name": "expense-tracker-vabuenso",
+      "source": "frontend"
+    }
+  ]
+}

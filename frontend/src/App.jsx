@@ -9,8 +9,11 @@ import IncomeStats from './components/IncomeStats';
 import IncomeGraph from './components/IncomeGraph';
 import IncomeList from './components/IncomeList';
 
+import OverallDashboard from './components/OverallDashboard';
+
 import AddExpenseModal from './components/AddExpenseModal';
 import AddIncomeModal from './components/AddIncomeModal';
+import { API_BASE_URL } from './config/api';
 
 function App() {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -29,7 +32,14 @@ function App() {
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('overall-dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Clear search query when currentView changes
+  useEffect(() => {
+    setSearchQuery('');
+  }, [currentView]);
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -42,17 +52,54 @@ function App() {
   const fetchData = async () => {
     try {
       // Fetch dynamic expenses
-      const expResponse = await fetch('http://localhost:3000/api/expenses');
+      const expResponse = await fetch(`${API_BASE_URL}/expenses`);
       const expData = await expResponse.json();
       if (expData.success) {
-        setExpenses(expData.data || []);
+        const sortedExpenses = (expData.data || []).sort((a, b) => {
+          const dateA = a.Expense_Date ? new Date(a.Expense_Date).getTime() : 0;
+          const dateB = b.Expense_Date ? new Date(b.Expense_Date).getTime() : 0;
+          const isNaNA = isNaN(dateA);
+          const isNaNB = isNaN(dateB);
+          if (isNaNA && isNaNB) return String(b.id || '').localeCompare(String(a.id || ''));
+          if (isNaNA) return 1;
+          if (isNaNB) return -1;
+          if (dateB !== dateA) {
+            return dateB - dateA;
+          }
+          return String(b.id || '').localeCompare(String(a.id || ''));
+        });
+        setExpenses(sortedExpenses);
       }
 
       // Fetch dynamic incomes
-      const incResponse = await fetch('http://localhost:3000/api/incomes');
+      const incResponse = await fetch(`${API_BASE_URL}/incomes`);
       const incData = await incResponse.json();
       if (incData.success) {
-        setIncomes(incData.data || []);
+        const sortedIncomes = (incData.data || []).sort((a, b) => {
+          const dateA = a.Income_Date ? new Date(a.Income_Date).getTime() : 0;
+          const dateB = b.Income_Date ? new Date(b.Income_Date).getTime() : 0;
+          const isNaNA = isNaN(dateA);
+          const isNaNB = isNaN(dateB);
+          if (isNaNA && isNaNB) return String(b.id || '').localeCompare(String(a.id || ''));
+          if (isNaNA) return 1;
+          if (isNaNB) return -1;
+          if (dateB !== dateA) {
+            return dateB - dateA;
+          }
+          return String(b.id || '').localeCompare(String(a.id || ''));
+        });
+        setIncomes(sortedIncomes);
+      }
+
+      // Fetch current user details
+      try {
+        const userResponse = await fetch(`${API_BASE_URL}/current-user`);
+        const userData = await userResponse.json();
+        if (userData.success) {
+          setCurrentUser(userData.data);
+        }
+      } catch (err) {
+        console.error("Error fetching current user details:", err);
       }
     } catch (error) {
       console.error("Error fetching dynamic CRM data:", error);
@@ -76,7 +123,7 @@ function App() {
       message: "Are you sure you want to delete this expense from Zoho CRM?",
       onConfirm: async () => {
         try {
-          const response = await fetch(`http://localhost:3000/api/expenses/${id}`, {
+          const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
             method: 'DELETE'
           });
           const data = await response.json();
@@ -103,7 +150,7 @@ function App() {
       message: "Are you sure you want to delete this income from Zoho CRM?",
       onConfirm: async () => {
         try {
-          const response = await fetch(`http://localhost:3000/api/incomes/${id}`, {
+          const response = await fetch(`${API_BASE_URL}/incomes/${id}`, {
             method: 'DELETE'
           });
           const data = await response.json();
@@ -131,11 +178,14 @@ function App() {
         onViewChange={setCurrentView} 
         expensesCount={expenses.length}
         categoriesCount={uniqueExpenseCategoriesCount}
+        currentUser={currentUser}
       />
       
       <div className="main">
         <Topbar 
           currentView={currentView}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           onAddExpense={() => {
             setEditExpense(null);
             setIsExpenseModalOpen(true);
@@ -149,12 +199,23 @@ function App() {
         <div className="content">
           {loading ? (
             <div style={{ color: 'var(--text3)', padding: '40px', textAlign: 'center' }}>Loading dashboard data...</div>
+          ) : currentView === 'overall-dashboard' ? (
+            <OverallDashboard
+              expenses={expenses}
+              incomes={incomes}
+              searchQuery={searchQuery}
+              onEditExpense={handleEditExpense}
+              onDeleteExpense={handleDeleteExpense}
+              onEditIncome={handleEditIncome}
+              onDeleteIncome={handleDeleteIncome}
+            />
           ) : currentView === 'dashboard' ? (
             <>
               <Stats expenses={expenses} />
               <ActivityGraph expenses={expenses} />
               <ExpenseList 
                 expenses={expenses} 
+                searchQuery={searchQuery}
                 isAllExpensesView={false} 
                 onEdit={handleEditExpense} 
                 onDelete={handleDeleteExpense} 
@@ -167,6 +228,7 @@ function App() {
               <IncomeGraph incomes={incomes} />
               <IncomeList 
                 incomes={incomes} 
+                searchQuery={searchQuery}
                 isAllIncomesView={false} 
                 onEdit={handleEditIncome} 
                 onDelete={handleDeleteIncome} 
@@ -176,6 +238,7 @@ function App() {
             <div className="all-expenses-view animate-fade-in">
               <ExpenseList 
                 expenses={expenses} 
+                searchQuery={searchQuery}
                 isAllExpensesView={true} 
                 onEdit={handleEditExpense} 
                 onDelete={handleDeleteExpense} 

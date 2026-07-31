@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
-const IncomeList = ({ incomes, isAllIncomesView = false, onEdit, onDelete }) => {
+const IncomeList = ({ incomes, searchQuery = '', isAllIncomesView = false, onEdit, onDelete }) => {
   const getCategoryStyles = (categoryObj) => {
     const categoryName = categoryObj ? categoryObj.name : 'Other';
     const name = categoryName.toLowerCase();
@@ -34,6 +34,22 @@ const IncomeList = ({ incomes, isAllIncomesView = false, onEdit, onDelete }) => 
     }
   };
 
+  const filteredIncomes = useMemo(() => {
+    return incomes.filter(inc => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const desc = (inc.Note || inc.Name || '').toLowerCase();
+        const cat = (inc.Income_Type?.name || 'Other').toLowerCase();
+        const mode = (inc.Payment_Mode || '').toLowerCase();
+        const amount = String(inc.Amount || '');
+        if (!desc.includes(query) && !cat.includes(query) && !mode.includes(query) && !amount.includes(query)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [incomes, searchQuery]);
+
   return (
     <>
       {!isAllIncomesView && (
@@ -51,10 +67,12 @@ const IncomeList = ({ incomes, isAllIncomesView = false, onEdit, onDelete }) => 
           <span style={{ textAlign: 'right' }}>Amount</span>
         </div>
 
-        {incomes.length === 0 ? (
-          <div style={{ color: 'var(--text3)', textAlign: 'center', padding: '24px' }}>No incomes found in CRM.</div>
+        {filteredIncomes.length === 0 ? (
+          <div style={{ color: 'var(--text3)', textAlign: 'center', padding: '24px' }}>
+            {incomes.length === 0 ? "No incomes found in CRM." : "No incomes match the search query."}
+          </div>
         ) : (
-          incomes.map((inc) => {
+          filteredIncomes.map((inc) => {
             const styles = getCategoryStyles(inc.Income_Type);
             return (
               <div className="list-row" key={inc.id}>

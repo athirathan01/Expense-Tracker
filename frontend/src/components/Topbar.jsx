@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-const Topbar = ({ currentView, onAddExpense, onAddIncome }) => {
+const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddIncome }) => {
   const [theme, setTheme] = useState('dark');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      inputRef.current?.blur();
+    }
+  };
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -10,10 +28,11 @@ const Topbar = ({ currentView, onAddExpense, onAddIncome }) => {
   };
 
   const getTitle = () => {
-    if (currentView === 'dashboard') return 'Dashboard';
+    if (currentView === 'overall-dashboard') return 'Overall Dashboard';
+    if (currentView === 'dashboard') return 'Expense Dashboard';
     if (currentView === 'income-dashboard') return 'Income Dashboard';
     if (currentView === 'all-expenses') return 'All Expenses';
-    return 'Dashboard';
+    return 'Overall Dashboard';
   };
 
   return (
@@ -21,7 +40,19 @@ const Topbar = ({ currentView, onAddExpense, onAddIncome }) => {
       <span className="page-title">{getTitle()}</span>
       <div className="search">
         <i className="ti ti-search" style={{ color: 'var(--text3)', fontSize: '14px' }}></i>
-        <input placeholder="Search expenses..." />
+        <input 
+          ref={inputRef}
+          value={searchQuery || ''}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+          placeholder={
+            currentView === 'overall-dashboard' 
+              ? "Search transactions..." 
+              : currentView === 'income-dashboard' 
+                ? "Search incomes..." 
+                : "Search expenses..."
+          } 
+        />
         <span style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>/</span>
       </div>
       <button 

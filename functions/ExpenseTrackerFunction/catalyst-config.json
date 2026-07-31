@@ -1,0 +1,16 @@
+{
+	"deployment": {
+		"name": "expensetrackerfunction",
+		"stack": "node18",
+		"type": "advancedio",
+		"env_variables": {
+			"REFRESH_TOKEN": "1000.5a00bc5d867544ddc1fc6d6b7fb49400.b3f5100ec772eb5ed4cada1d3a457b4a",
+			"CLIENT_ID": "1000.92ERAOM9XDZWXCOYMUY8SCCY1MMKXT",
+			"CLIENT_SECRET": "84e50dadb8c1435ff1398cc7093c59116bde197a04",
+			"API_DOMAIN": "https://www.zohoapis.in"
+		}
+	},
+	"execution": {
+		"main": "index.js"
+	}
+}

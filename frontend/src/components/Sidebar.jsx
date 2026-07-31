@@ -1,6 +1,15 @@
 import React from 'react';
+import { API_BASE_URL } from '../config/api';
 
-const Sidebar = ({ currentView, onViewChange, expensesCount, categoriesCount }) => {
+const Sidebar = ({ currentView, onViewChange, expensesCount, categoriesCount, currentUser }) => {
+  const getAvatarSrc = () => {
+    if (!currentUser?.avatarUrl) return null;
+    if (currentUser.avatarUrl.startsWith('http')) return currentUser.avatarUrl;
+    return `${API_BASE_URL}${currentUser.avatarUrl.startsWith('/') ? '' : '/'}${currentUser.avatarUrl}`;
+  };
+
+  const avatarSrc = getAvatarSrc();
+
   return (
     <div className="sidebar">
       <div className="logo" onClick={() => onViewChange('dashboard')} style={{ cursor: 'pointer' }}>
@@ -15,10 +24,16 @@ const Sidebar = ({ currentView, onViewChange, expensesCount, categoriesCount }) 
       <nav className="nav">
         <div className="nav-section">Overview</div>
         <div 
+          className={`nav-item ${currentView === 'overall-dashboard' ? 'active' : ''}`}
+          onClick={() => onViewChange('overall-dashboard')}
+        >
+          <i className="ti ti-chart-pie"></i> Overall Dashboard
+        </div>
+        <div 
           className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
           onClick={() => onViewChange('dashboard')}
         >
-          <i className="ti ti-layout-dashboard"></i> Dashboard
+          <i className="ti ti-layout-dashboard"></i> Expense Dashboard
         </div>
         <div 
           className={`nav-item ${currentView === 'income-dashboard' ? 'active' : ''}`}
@@ -43,19 +58,32 @@ const Sidebar = ({ currentView, onViewChange, expensesCount, categoriesCount }) 
         <div className="nav-item">
           <i className="ti ti-wallet"></i> Budgets
         </div>
-        
-        <div className="nav-section" style={{ marginTop: '8px' }}>Settings</div>
-        <div className="nav-item">
-          <i className="ti ti-brand-zoho" style={{ fontSize: '13px' }}></i> Zoho Sync
-        </div>
-        <div className="nav-item">
-          <i className="ti ti-settings"></i> Preferences
-        </div>
       </nav>
       
-      <div className="sidebar-footer">
-        <div className="avatar">AK</div>
-        <span className="avatar-name">Ajay Kumar</span>
+      <div className="sidebar-footer" title={currentUser?.email || ''}>
+        {avatarSrc ? (
+          <img 
+            src={avatarSrc} 
+            alt={currentUser?.fullName || 'User'} 
+            className="avatar-img"
+            onError={(e) => {
+              e.target.onerror = null;
+              if (currentUser?.fallbackAvatar && e.target.src !== currentUser.fallbackAvatar) {
+                e.target.src = currentUser.fallbackAvatar;
+              } else {
+                e.target.style.display = 'none';
+                if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+              }
+            }} 
+          />
+        ) : null}
+        <div 
+          className="avatar" 
+          style={{ display: avatarSrc ? 'none' : 'flex' }}
+        >
+          {currentUser?.initials || '??'}
+        </div>
+        <span className="avatar-name">{currentUser?.fullName || 'Guest User'}</span>
       </div>
     </div>
   );

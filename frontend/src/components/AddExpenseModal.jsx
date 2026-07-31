@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 
 const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast }) => {
   const getTodayDate = () => {
@@ -51,7 +52,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
   const fetchCategories = async () => {
     setLoadingCategories(true);
     try {
-      const response = await fetch('http://localhost:3000/api/expense-categories');
+      const response = await fetch(`${API_BASE_URL}/expense-categories`);
       const data = await response.json();
       if (data.success) {
         setCategories(data.data);
@@ -69,27 +70,37 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (isSaveAndNew = false) => {
+    // Validation
+    if (!formData.typeId || !formData.amount || !formData.date || !formData.paymentMethod || !formData.note) {
+      if (showToast) showToast('Please fill in all mandatory fields!', 'error');
+      return;
+    }
+    if (isNaN(Number(formData.amount)) || Number(formData.amount) <= 0) {
+      if (showToast) showToast('Please enter a valid amount greater than 0!', 'error');
+      return;
+    }
+
     setLoading(true);
-    
+
     // Find the name of the selected category for the backend
     const selectedCategory = categories.find(c => c.id === formData.typeId);
     const typeName = selectedCategory ? selectedCategory.name : '';
-    
+
     const payload = {
       ...formData,
       typeName
     };
 
-    const url = editRecord 
-      ? `http://localhost:3000/api/expenses/${editRecord.id}` 
-      : 'http://localhost:3000/api/expenses';
+    const url = editRecord
+      ? `${API_BASE_URL}/expenses/${editRecord.id}`
+      : `${API_BASE_URL}/expenses`;
     const method = editRecord ? 'PUT' : 'POST';
 
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       });
       const data = await response.json();
@@ -97,7 +108,9 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
         if (showToast) showToast(editRecord ? 'Expense updated successfully!' : 'Expense saved to Zoho successfully!', 'success');
         setFormData({ typeId: '', amount: '', date: getTodayDate(), paymentMethod: '', note: '' });
         if (onSaveSuccess) onSaveSuccess();
-        onClose();
+        if (!isSaveAndNew) {
+          onClose();
+        }
       } else {
         if (showToast) showToast('Failed to save expense: ' + (data.error || 'Unknown error'), 'error');
       }
@@ -111,18 +124,18 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
   return (
     <div className="modal-overlay">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        
+
         <div className="form-group">
-          <div className="form-label">Expense Type</div>
+          <div className="form-label">Expense Type <span style={{ color: 'var(--red)' }}>*</span></div>
           <div className="form-input-wrap">
-            <div 
+            <div
               className={`form-input custom-select-trigger ${isTypeDropdownOpen ? 'active' : ''}`}
               onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none' }}
             >
               <span>
-                {formData.typeId 
-                  ? (categories.find(c => c.id === formData.typeId)?.name || "") 
+                {formData.typeId
+                  ? (categories.find(c => c.id === formData.typeId)?.name || "")
                   : (loadingCategories ? "Loading..." : "")}
               </span>
               <i className="ti ti-chevron-down" style={{ color: 'var(--text3)' }}></i>
@@ -132,8 +145,8 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
                 <div className="custom-dropdown-overlay" onClick={() => setIsTypeDropdownOpen(false)} />
                 <div className="custom-dropdown-list">
                   {categories.map(cat => (
-                    <div 
-                      key={cat.id} 
+                    <div
+                      key={cat.id}
                       className="custom-dropdown-item"
                       onClick={() => {
                         setFormData({ ...formData, typeId: cat.id });
@@ -150,21 +163,21 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
         </div>
 
         <div className="form-group">
-          <div className="form-label">Amount</div>
+          <div className="form-label">Amount <span style={{ color: 'var(--red)' }}>*</span></div>
           <div className="form-input-wrap">
             <input type="number" name="amount" value={formData.amount} onChange={handleChange} className="form-input" />
           </div>
         </div>
 
         <div className="form-group">
-          <div className="form-label">Expense Date</div>
+          <div className="form-label">Expense Date <span style={{ color: 'var(--red)' }}>*</span></div>
           <div className="form-input-wrap">
-            <input 
-              type="date" 
-              name="date" 
-              value={formData.date} 
-              onChange={handleChange} 
-              className="form-input" 
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className="form-input"
               onClick={(e) => {
                 try {
                   e.target.showPicker();
@@ -178,9 +191,9 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
         </div>
 
         <div className="form-group">
-          <div className="form-label">Payment Method</div>
+          <div className="form-label">Payment Method <span style={{ color: 'var(--red)' }}>*</span></div>
           <div className="form-input-wrap">
-            <div 
+            <div
               className={`form-input custom-select-trigger ${isPaymentDropdownOpen ? 'active' : ''}`}
               onClick={() => setIsPaymentDropdownOpen(!isPaymentDropdownOpen)}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none' }}
@@ -193,8 +206,8 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
                 <div className="custom-dropdown-overlay" onClick={() => setIsPaymentDropdownOpen(false)} />
                 <div className="custom-dropdown-list">
                   {['Cash', 'Credit Card', 'Debit Card', 'UPI'].map(method => (
-                    <div 
-                      key={method} 
+                    <div
+                      key={method}
                       className="custom-dropdown-item"
                       onClick={() => {
                         setFormData({ ...formData, paymentMethod: method });
@@ -211,7 +224,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
         </div>
 
         <div className="form-group">
-          <div className="form-label">Note</div>
+          <div className="form-label">Note <span style={{ color: 'var(--red)' }}>*</span></div>
           <div className="form-input-wrap">
             <textarea name="note" value={formData.note} onChange={handleChange} className="form-input"></textarea>
             <i className="ti ti-line-dashed select-icon" style={{ top: 'auto', bottom: '8px', transform: 'none' }}></i>
@@ -220,7 +233,12 @@ const AddExpenseModal = ({ isOpen, onClose, onSaveSuccess, editRecord, showToast
 
         <div className="modal-actions">
           <button className="btn" onClick={onClose} disabled={loading}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
+          {!editRecord && (
+            <button className="btn" onClick={() => handleSave(true)} disabled={loading} style={{ color: 'var(--blue)', borderColor: 'rgba(88, 166, 255, 0.3)' }}>
+              Save & New
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={() => handleSave(false)} disabled={loading}>
             {editRecord ? (loading ? 'Updating...' : 'Update') : (loading ? 'Saving...' : 'Save')}
           </button>
         </div>
