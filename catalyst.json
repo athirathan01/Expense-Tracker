@@ -2,7 +2,7 @@
   "functions": {
     "source": "functions",
     "targets": [
-      "ExpenseTrackerFunction"
+      "expensetrackerfunction"
     ],
     "ignore": []
   },

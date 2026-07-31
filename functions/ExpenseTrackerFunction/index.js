@@ -478,6 +478,8 @@ router.get('/health', (req, res) => {
 app.use('/api', router);
 app.use('/server/ExpenseTrackerFunction/api', router);
 app.use('/server/expensetrackerfunction/api', router);
+app.use('/server/ExpenseTrackerFunction', router);
+app.use('/server/expensetrackerfunction', router);
 app.use('/', router);
 
 // Start server when executed directly
