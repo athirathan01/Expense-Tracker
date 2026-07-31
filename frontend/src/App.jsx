@@ -52,7 +52,7 @@ function App() {
   const fetchData = async () => {
     try {
       // Fetch dynamic expenses
-      const expResponse = await fetch(`${API_BASE_URL}/expenses`);
+      const expResponse = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/expenses`);
       const expData = await expResponse.json();
       if (expData.success) {
         const sortedExpenses = (expData.data || []).sort((a, b) => {
@@ -72,7 +72,7 @@ function App() {
       }
 
       // Fetch dynamic incomes
-      const incResponse = await fetch(`${API_BASE_URL}/incomes`);
+      const incResponse = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/incomes`);
       const incData = await incResponse.json();
       if (incData.success) {
         const sortedIncomes = (incData.data || []).sort((a, b) => {
@@ -93,7 +93,7 @@ function App() {
 
       // Fetch current user details
       try {
-        const userResponse = await fetch(`${API_BASE_URL}/current-user`);
+        const userResponse = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/current-user`);
         const userData = await userResponse.json();
         if (userData.success) {
           setCurrentUser(userData.data);
@@ -123,7 +123,7 @@ function App() {
       message: "Are you sure you want to delete this expense from Zoho CRM?",
       onConfirm: async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+          const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/expenses/${id}`, {
             method: 'DELETE'
           });
           const data = await response.json();
@@ -150,7 +150,7 @@ function App() {
       message: "Are you sure you want to delete this income from Zoho CRM?",
       onConfirm: async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/incomes/${id}`, {
+          const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/incomes/${id}`, {
             method: 'DELETE'
           });
           const data = await response.json();
