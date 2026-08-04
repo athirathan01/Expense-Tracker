@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddIncome }) => {
+const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddIncome, onToggleMobileMenu }) => {
   const [theme, setTheme] = useState('dark');
   const inputRef = useRef(null);
 
@@ -37,7 +37,28 @@ const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddI
 
   return (
     <div className="topbar">
+      <button 
+        className="icon-btn mobile-menu-btn" 
+        onClick={onToggleMobileMenu} 
+        title="Toggle navigation"
+        style={{ 
+          display: 'none', 
+          width: '32px', 
+          height: '32px', 
+          border: '1px solid var(--border)', 
+          background: 'var(--bg2)',
+          color: 'var(--text)',
+          borderRadius: '6px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer'
+        }}
+      >
+        <i className="ti ti-menu-2" style={{ fontSize: '18px' }}></i>
+      </button>
+
       <span className="page-title">{getTitle()}</span>
+
       <div className="search">
         <i className="ti ti-search" style={{ color: 'var(--text3)', fontSize: '14px' }}></i>
         <input 
@@ -55,20 +76,23 @@ const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddI
         />
         <span style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>/</span>
       </div>
-      <button 
-        className="icon-btn" 
-        onClick={toggleTheme} 
-        title="Toggle theme" 
-        style={{ marginLeft: 'auto', width: '32px', height: '32px', border: '1px solid var(--border)', background: 'var(--bg2)' }}
-      >
-        <i className={theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon'} style={{ fontSize: '18px' }}></i>
-      </button>
-      <button className="btn" onClick={onAddIncome} style={{ color: 'var(--blue)', borderColor: 'rgba(88, 166, 255, 0.3)' }}>
-        <i className="ti ti-plus"></i> Add income ↙
-      </button>
-      <button className="btn btn-primary" onClick={onAddExpense}>
-        <i className="ti ti-plus"></i> Add expense ↗
-      </button>
+
+      <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+        <button 
+          className="icon-btn" 
+          onClick={toggleTheme} 
+          title="Toggle theme" 
+          style={{ width: '32px', height: '32px', border: '1px solid var(--border)', background: 'var(--bg2)' }}
+        >
+          <i className={theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon'} style={{ fontSize: '18px' }}></i>
+        </button>
+        <button className="btn" onClick={onAddIncome} style={{ color: 'var(--blue)', borderColor: 'rgba(88, 166, 255, 0.3)' }}>
+          <i className="ti ti-plus"></i> Add income ↙
+        </button>
+        <button className="btn btn-primary" onClick={onAddExpense}>
+          <i className="ti ti-plus"></i> Add expense ↗
+        </button>
+      </div>
     </div>
   );
 };

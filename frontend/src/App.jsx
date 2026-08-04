@@ -167,6 +167,8 @@ function App() {
     });
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const uniqueExpenseCategoriesCount = new Set(
     expenses.map(exp => exp.Expense_Type?.id).filter(Boolean)
   ).size;
@@ -179,6 +181,8 @@ function App() {
         expensesCount={expenses.length}
         categoriesCount={uniqueExpenseCategoriesCount}
         currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
       
       <div className="main">
@@ -186,6 +190,7 @@ function App() {
           currentView={currentView}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
           onAddExpense={() => {
             setEditExpense(null);
             setIsExpenseModalOpen(true);

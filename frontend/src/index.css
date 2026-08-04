@@ -348,3 +348,168 @@ input[type="date"] {
   from { transform: translateX(0); opacity: 1; }
   to { transform: translateX(100%); opacity: 0; }
 }
+
+/* ==========================================================================
+   Mobile & Tablet Responsive Layout
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .shell {
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar Mobile Drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 270px;
+    z-index: 10000;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.75);
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9999;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* Topbar Responsive Layout */
+  .topbar {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-title {
+    font-size: 14px;
+  }
+
+  .search {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .btn {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  /* Content Area */
+  .content {
+    padding: 12px;
+  }
+
+  /* Stats Grid */
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .stat-card {
+    padding: 10px 12px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  /* Graph Horizontal Scroll */
+  .graph-wrap {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .graph-grid {
+    min-width: 480px;
+  }
+
+  .graph-months {
+    min-width: 480px;
+  }
+
+  /* Transaction List Responsive Formatting */
+  .list-header {
+    display: none;
+  }
+
+  .list-row {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 12px 10px;
+  }
+
+  .row-category {
+    order: 2;
+  }
+
+  .row-date {
+    order: 3;
+    font-size: 11px;
+    color: var(--text3);
+    margin-left: auto;
+  }
+
+  .row-amount {
+    order: 4;
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 4px;
+    border-top: 1px dashed var(--border);
+    padding-top: 6px;
+  }
+
+  /* Modals on Mobile */
+  .modal-content {
+    width: 95%;
+    padding: 16px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .form-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .form-label {
+    width: 100%;
+    text-align: left;
+    padding-right: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
