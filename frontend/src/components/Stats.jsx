@@ -31,12 +31,7 @@ const Stats = ({ expenses }) => {
   });
   const thisWeekSum = thisWeekExpenses.reduce((sum, exp) => sum + Number(exp.Amount || 0), 0);
 
-  // 3. Budget Left (₹25,000 monthly baseline)
-  const budgetBaseline = 25000;
-  const budgetLeft = Math.max(0, budgetBaseline - thisMonthSum);
-  const budgetPercent = ((budgetLeft / budgetBaseline) * 100).toFixed(1);
-
-  // 4. Total entries
+  // 3. Total entries
   const totalEntries = expenses.length;
   const uniqueCategories = new Set(
     expenses.map(exp => exp.Expense_Type?.id).filter(Boolean)
@@ -53,11 +48,6 @@ const Stats = ({ expenses }) => {
         <div className="stat-label">This week</div>
         <div className="stat-value">₹{thisWeekSum.toLocaleString('en-IN')}</div>
         <div className="stat-sub stat-dn">Mon to Sun</div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-label">Budget left</div>
-        <div className="stat-value">₹{budgetLeft.toLocaleString('en-IN')}</div>
-        <div className="stat-sub" style={{ color: 'var(--amber)' }}>{budgetPercent}% remaining</div>
       </div>
       <div className="stat-card">
         <div className="stat-label">Total entries</div>

@@ -31,11 +31,7 @@ const IncomeStats = ({ incomes }) => {
   });
   const thisWeekSum = thisWeekIncomes.reduce((sum, inc) => sum + Number(inc.Amount || 0), 0);
 
-  // 3. Monthly Income Target progress
-  const targetBaseline = 50000;
-  const targetPercent = Math.min(100, ((thisMonthSum / targetBaseline) * 100)).toFixed(1);
-
-  // 4. Total entries
+  // 3. Total entries
   const totalEntries = incomes.length;
   const uniqueCategories = new Set(
     incomes.map(inc => inc.Income_Type?.id).filter(Boolean)
@@ -52,11 +48,6 @@ const IncomeStats = ({ incomes }) => {
         <div className="stat-label">This week</div>
         <div className="stat-value" style={{ color: 'var(--green)' }}>₹{thisWeekSum.toLocaleString('en-IN')}</div>
         <div className="stat-sub stat-dn">Mon to Sun</div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-label">Monthly Target</div>
-        <div className="stat-value">₹{targetBaseline.toLocaleString('en-IN')}</div>
-        <div className="stat-sub" style={{ color: 'var(--blue)' }}>{targetPercent}% achieved</div>
       </div>
       <div className="stat-card">
         <div className="stat-label">Total entries</div>

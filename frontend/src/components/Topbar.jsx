@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddIncome }) => {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light';
-  });
+  const [theme, setTheme] = useState('dark');
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -29,7 +22,9 @@ const Topbar = ({ currentView, searchQuery, onSearchChange, onAddExpense, onAddI
   };
 
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
   };
 
   const getTitle = () => {
