@@ -88,7 +88,29 @@ body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,san
 .btn-primary:hover{background:#2ea043}
 .search{flex:1;max-width:260px;display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:5px 10px}
 .search input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:100%}
-.search input::placeholder{color:var(--text3)}
+.topbar-filter-select {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  height: 30px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.topbar-filter-select:focus {
+  border-color: var(--blue);
+}
+
+.topbar-filter-select option {
+  background-color: var(--bg2);
+  color: var(--text);
+}
+
 .content{flex:1;overflow-y:auto;padding:20px}
 /* Stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
@@ -97,7 +119,158 @@ body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,san
 .stat-value{font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text)}
 .stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
 .stat-up{color:var(--red)}
-.stat-dn{color:var(--green)}
+/* Overall Dashboard Hero Row */
+.overall-hero-row {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.hero-balance-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 26px 14px;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.hero-balance-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.hero-balance-val {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 4px 0 16px;
+  letter-spacing: -0.02em;
+  font-family: var(--mono);
+}
+
+.hero-sub-stats {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 12px;
+  z-index: 2;
+}
+
+.hero-sub-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-sub-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hero-sub-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+.sparkline-svg {
+  width: 108%;
+  height: 44px;
+  margin: 0 -4% -14px;
+  display: block;
+}
+
+/* Category Spending Donut Card */
+.category-spending-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.category-spending-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+
+.category-spending-body {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+
+.donut-chart-wrap {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+}
+
+.donut-center-text {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+.category-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.category-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-pct {
+  color: var(--text3);
+  margin-left: 2px;
+  font-weight: 500;
+}
+
 /* Activity graph */
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .section-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
@@ -344,6 +517,16 @@ input[type="date"] {
   from { transform: translateX(120%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+@keyframes spinIcon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-icon {
+  animation: spinIcon 0.8s linear infinite;
+  display: inline-block;
+}
+
 @keyframes toastFadeOut {
   from { transform: translateX(0); opacity: 1; }
   to { transform: translateX(100%); opacity: 0; }

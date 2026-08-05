@@ -1,41 +1,143 @@
 import React, { useState, useMemo } from 'react';
 import { CATEGORY_MAP, hexToRGBA } from './ExpenseList';
 
-const OverallDashboard = ({ expenses, incomes, searchQuery = '', onEditExpense, onDeleteExpense, onEditIncome, onDeleteIncome }) => {
+const OverallDashboard = ({ 
+  expenses, 
+  incomes, 
+  searchQuery = '', 
+  timeFilter = { mode: 'all' }, 
+  onEditExpense, 
+  onDeleteExpense, 
+  onEditIncome, 
+  onDeleteIncome 
+}) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+  // Date Filtering Logic based on Topbar timeFilter prop
+  const isDateInFilter = (dateStr) => {
+    if (!dateStr) return false;
+    const itemDate = new Date(dateStr);
+    if (isNaN(itemDate.getTime())) return false;
+
+    if (!timeFilter || timeFilter.mode === 'all') return true;
+
+    const itemYear = itemDate.getFullYear();
+    const itemMonth = itemDate.getMonth();
+    const itemDay = itemDate.getDate();
+
+    if (timeFilter.mode === 'year') {
+      return itemYear === Number(timeFilter.year || currentYear);
+    }
+
+    if (timeFilter.mode === 'month') {
+      return itemYear === Number(timeFilter.year || currentYear) && itemMonth === Number(timeFilter.month ?? now.getMonth());
+    }
+
+    if (timeFilter.mode === 'week') {
+      const monday = new Date(now);
+      const dayOfWeek = now.getDay();
+      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      monday.setDate(diff);
+      monday.setHours(0, 0, 0, 0);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      return itemDate >= monday && itemDate <= sunday;
+    }
+
+    if (timeFilter.mode === 'day') {
+      if (!timeFilter.date) return true;
+      const [y, m, d] = timeFilter.date.split('-').map(Number);
+      return itemYear === y && itemMonth === (m - 1) && itemDay === d;
+    }
+
+    if (timeFilter.mode === 'custom') {
+      if (!timeFilter.customFrom && !timeFilter.customTo) return true;
+      const fromTime = timeFilter.customFrom ? new Date(timeFilter.customFrom).setHours(0, 0, 0, 0) : 0;
+      const toTime = timeFilter.customTo ? new Date(timeFilter.customTo).setHours(23, 59, 59, 999) : Infinity;
+      const itemTime = itemDate.getTime();
+      return itemTime >= fromTime && itemTime <= toTime;
+    }
+
+    return true;
+  };
+
+  // Filtered Expenses and Incomes
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(exp => isDateInFilter(exp.Expense_Date));
+  }, [expenses, timeFilter]);
+
+  const filteredIncomes = useMemo(() => {
+    return incomes.filter(inc => isDateInFilter(inc.Income_Date));
+  }, [incomes, timeFilter]);
+
   // 1. Stats Calculations
-  const totalIncome = useMemo(() => incomes.reduce((sum, inc) => sum + Number(inc.Amount || 0), 0), [incomes]);
-  const totalExpenses = useMemo(() => expenses.reduce((sum, exp) => sum + Number(exp.Amount || 0), 0), [expenses]);
+  const totalIncome = useMemo(() => filteredIncomes.reduce((sum, inc) => sum + Number(inc.Amount || 0), 0), [filteredIncomes]);
+  const totalExpenses = useMemo(() => filteredExpenses.reduce((sum, exp) => sum + Number(exp.Amount || 0), 0), [filteredExpenses]);
   const netBalance = totalIncome - totalExpenses;
   const savingsRate = totalIncome > 0 ? Math.max(0, Math.min(100, Math.round((netBalance / totalIncome) * 100))) : 0;
 
-  // 2. Monthly Comparison Calculations
+  // 2. Spending by Category Calculation for Donut Chart
+  const categorySpending = useMemo(() => {
+    const map = {};
+    let total = 0;
+    filteredExpenses.forEach(exp => {
+      const amt = Number(exp.Amount || 0);
+      const catName = exp.Expense_Type?.name || 'Miscellaneous';
+      map[catName] = (map[catName] || 0) + amt;
+      total += amt;
+    });
+
+    const defaultColors = ['#4F46E5', '#E8604C', '#F7B733', '#12B76A', '#8177F0', '#0EA5E9', '#EC4899'];
+
+    const list = Object.entries(map).map(([name, amount], idx) => {
+      const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+      let match = CATEGORY_MAP.find(c => name.toLowerCase() === c.name.toLowerCase());
+      const color = match ? match.color : defaultColors[idx % defaultColors.length];
+      return { name, amount, pct, color };
+    }).sort((a, b) => b.amount - a.amount);
+
+    return { list: list.slice(0, 4), total };
+  }, [filteredExpenses]);
+
+  const formatShortAmount = (num) => {
+    if (num >= 100000) return `₹${(num / 1000).toFixed(0)}K`;
+    if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`;
+    return `₹${num}`;
+  };
+
+  // 3. Monthly Comparison Calculations
+  const activeYearForGraph = timeFilter?.mode === 'year' || timeFilter?.mode === 'month' 
+    ? Number(timeFilter.year || currentYear) 
+    : currentYear;
+
   const monthlyIncomes = useMemo(() => {
     const sums = Array(12).fill(0);
     incomes.forEach(inc => {
       if (!inc.Income_Date) return;
       const date = new Date(inc.Income_Date);
-      if (date.getFullYear() === currentYear) {
+      if (date.getFullYear() === activeYearForGraph) {
         sums[date.getMonth()] += Number(inc.Amount || 0);
       }
     });
     return sums;
-  }, [incomes, currentYear]);
+  }, [incomes, activeYearForGraph]);
 
   const monthlyExpenses = useMemo(() => {
     const sums = Array(12).fill(0);
     expenses.forEach(exp => {
       if (!exp.Expense_Date) return;
       const date = new Date(exp.Expense_Date);
-      if (date.getFullYear() === currentYear) {
+      if (date.getFullYear() === activeYearForGraph) {
         sums[date.getMonth()] += Number(exp.Amount || 0);
       }
     });
     return sums;
-  }, [expenses, currentYear]);
+  }, [expenses, activeYearForGraph]);
 
   const maxMonthValue = useMemo(() => {
     return Math.max(...monthlyIncomes, ...monthlyExpenses) || 1;
@@ -43,11 +145,11 @@ const OverallDashboard = ({ expenses, incomes, searchQuery = '', onEditExpense, 
 
   const [activeIndex, setActiveIndex] = useState(now.getMonth());
 
-  // 3. Merging and Filtering Transactions
+  // 4. Merging and Filtering Transactions
   const mergedTransactions = useMemo(() => {
     const list = [
-      ...expenses.map(e => ({ ...e, type: 'expense', dateStr: e.Expense_Date })),
-      ...incomes.map(i => ({ ...i, type: 'income', dateStr: i.Income_Date }))
+      ...filteredExpenses.map(e => ({ ...e, type: 'expense', dateStr: e.Expense_Date })),
+      ...filteredIncomes.map(i => ({ ...i, type: 'income', dateStr: i.Income_Date }))
     ];
 
     return list.sort((a, b) => {
@@ -63,9 +165,9 @@ const OverallDashboard = ({ expenses, incomes, searchQuery = '', onEditExpense, 
       }
       return String(b.id || '').localeCompare(String(a.id || ''));
     });
-  }, [expenses, incomes]);
+  }, [filteredExpenses, filteredIncomes]);
 
-  const filteredTransactions = useMemo(() => {
+  const searchedTransactions = useMemo(() => {
     return mergedTransactions.filter(item => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -164,42 +266,102 @@ const OverallDashboard = ({ expenses, incomes, searchQuery = '', onEditExpense, 
 
   return (
     <>
-      {/* 1. Summary Cards */}
-      <div className="stats">
-        <div className="stat-card" style={{ borderLeft: `4px solid ${netBalance >= 0 ? 'var(--green)' : 'var(--red)'}` }}>
-          <div className="stat-label">Net Balance</div>
-          <div className="stat-value" style={{ color: netBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
-            ₹{netBalance.toLocaleString('en-IN')}
+      {/* 1. Hero Banner Row (Net Balance Card + Spending By Category Donut Card) */}
+      <div className="overall-hero-row">
+        {/* Left: Net Balance Card */}
+        <div className="hero-balance-card">
+          <div>
+            <div className="hero-balance-label">NET BALANCE</div>
+            <div className="hero-balance-val" style={{ color: netBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              ₹{netBalance.toLocaleString('en-IN')}
+            </div>
+            <div className="hero-sub-stats">
+              <div className="hero-sub-item">
+                <div className="hero-sub-title">
+                  <span style={{ color: 'var(--green)' }}>●</span> INCOME
+                </div>
+                <div className="hero-sub-val" style={{ color: 'var(--green)' }}>₹{totalIncome.toLocaleString('en-IN')}</div>
+              </div>
+              <div className="hero-sub-item">
+                <div className="hero-sub-title">
+                  <span style={{ color: 'var(--red)' }}>●</span> EXPENSES
+                </div>
+                <div className="hero-sub-val" style={{ color: 'var(--red)' }}>₹{totalExpenses.toLocaleString('en-IN')}</div>
+              </div>
+              <div className="hero-sub-item">
+                <div className="hero-sub-title">SAVED</div>
+                <div className="hero-sub-val" style={{ color: 'var(--blue)' }}>{savingsRate}%</div>
+              </div>
+            </div>
           </div>
-          <div className="stat-sub">Current Year Net Cash Flow</div>
+
+          {/* Smooth sparkline wave curve graphic at the bottom */}
+          <svg className="sparkline-svg" viewBox="0 0 400 40" preserveAspectRatio="none">
+            <path 
+              d="M 0,30 Q 50,15 100,25 T 200,18 T 300,10 T 400,5" 
+              fill="none" 
+              stroke="var(--blue)" 
+              strokeWidth="2.5" 
+              strokeLinecap="round"
+              opacity="0.6"
+            />
+          </svg>
         </div>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--green)' }}>
-          <div className="stat-label">Total Income</div>
-          <div className="stat-value" style={{ color: 'var(--green)' }}>
-            ₹{totalIncome.toLocaleString('en-IN')}
+
+        {/* Right: Spending By Category Donut Card */}
+        <div className="category-spending-card">
+          <div className="category-spending-title">SPENDING BY CATEGORY</div>
+          <div className="category-spending-body">
+            <div className="donut-chart-wrap">
+              <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                <circle cx="50" cy="50" r="38" fill="none" stroke="var(--bg3)" strokeWidth="11" />
+                {categorySpending.list.reduce((acc, cat) => {
+                  const strokeDasharray = `${(cat.pct / 100) * 238.76} 238.76`;
+                  const strokeDashoffset = -acc.offset;
+                  acc.elements.push(
+                    <circle
+                      key={cat.name}
+                      cx="50"
+                      cy="50"
+                      r="38"
+                      fill="none"
+                      stroke={cat.color}
+                      strokeWidth="11"
+                      strokeDasharray={strokeDasharray}
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                    />
+                  );
+                  acc.offset += (cat.pct / 100) * 238.76;
+                  return acc;
+                }, { offset: 0, elements: [] }).elements}
+              </svg>
+              <div className="donut-center-text">
+                {formatShortAmount(categorySpending.total)}
+              </div>
+            </div>
+
+            <div className="category-legend-list">
+              {categorySpending.list.length === 0 ? (
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>No expense category data</div>
+              ) : (
+                categorySpending.list.map(cat => (
+                  <div className="category-legend-item" key={cat.name}>
+                    <span className="legend-dot" style={{ background: cat.color }}></span>
+                    <span style={{ fontWeight: 500 }}>{cat.name}</span>
+                    <span className="legend-pct">· {cat.pct}%</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          <div className="stat-sub">Inflow dynamic records</div>
-        </div>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--red)' }}>
-          <div className="stat-label">Total Expenses</div>
-          <div className="stat-value" style={{ color: 'var(--red)' }}>
-            ₹{totalExpenses.toLocaleString('en-IN')}
-          </div>
-          <div className="stat-sub">Outflow dynamic records</div>
-        </div>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--blue)' }}>
-          <div className="stat-label">Savings Rate</div>
-          <div className="stat-value" style={{ color: 'var(--blue)' }}>
-            {savingsRate}%
-          </div>
-          <div className="stat-sub">Of income saved this year</div>
         </div>
       </div>
 
       {/* 2. Monthly Comparison Graph */}
       <div className="graph-wrap">
         <div className="section-header">
-          <span className="section-title">Income vs Expenses — {currentYear}</span>
+          <span className="section-title">Income vs Expenses — {activeYearForGraph}</span>
           <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
             Selected: <strong>{months[activeIndex]}</strong> (Income: <span style={{ color: 'var(--green)' }}>₹{monthlyIncomes[activeIndex].toLocaleString('en-IN')}</span> / Expense: <span style={{ color: 'var(--red)' }}>₹{monthlyExpenses[activeIndex].toLocaleString('en-IN')}</span>)
           </span>
@@ -266,7 +428,7 @@ const OverallDashboard = ({ expenses, incomes, searchQuery = '', onEditExpense, 
       <div className="section-header">
         <span className="section-title">Recent Transactions</span>
         <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
-          Showing {filteredTransactions.length} of {mergedTransactions.length} items
+          Showing {searchedTransactions.length} of {mergedTransactions.length} items
         </span>
       </div>
 
@@ -279,12 +441,12 @@ const OverallDashboard = ({ expenses, incomes, searchQuery = '', onEditExpense, 
           <span style={{ textAlign: 'right' }}>Amount</span>
         </div>
 
-        {filteredTransactions.length === 0 ? (
+        {searchedTransactions.length === 0 ? (
           <div style={{ color: 'var(--text3)', textAlign: 'center', padding: '36px', background: 'var(--bg2)', borderRadius: '8px' }}>
-            {mergedTransactions.length === 0 ? "No transactions found in CRM." : "No transactions match the search query."}
+            {mergedTransactions.length === 0 ? "No transactions match the selected filter." : "No transactions match the search query."}
           </div>
         ) : (
-          filteredTransactions.map((item) => {
+          searchedTransactions.map((item) => {
             const styles = getTransactionStyles(item);
             const isExpense = item.type === 'expense';
             return (

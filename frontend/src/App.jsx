@@ -1,55 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Stats from './components/Stats';
 import ActivityGraph from './components/ActivityGraph';
 import ExpenseList from './components/ExpenseList';
-
 import IncomeStats from './components/IncomeStats';
-import IncomeGraph from './components/IncomeGraph';
 import IncomeList from './components/IncomeList';
-
 import OverallDashboard from './components/OverallDashboard';
-
 import AddExpenseModal from './components/AddExpenseModal';
 import AddIncomeModal from './components/AddIncomeModal';
+import ConfirmModal from './components/ConfirmModal';
 import { API_BASE_URL } from './config/api';
+import './index.css';
 
 function App() {
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
-  
-  // CRUD States
-  const [editExpense, setEditExpense] = useState(null);
-  const [editIncome, setEditIncome] = useState(null);
-
-  // Custom Toast State
-  const [toasts, setToasts] = useState([]);
-
-  // Custom Confirmation Modal State
-  const [confirmData, setConfirmData] = useState(null); // { message, onConfirm }
-
+  const [currentView, setCurrentView] = useState('overall-dashboard');
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState('overall-dashboard');
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState(new Date());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Clear search query when currentView changes
-  useEffect(() => {
-    setSearchQuery('');
-  }, [currentView]);
+  // Modals & Confirmation
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState(null);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [editIncome, setEditIncome] = useState(null);
+  const [confirmData, setConfirmData] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Time Filter State for Overall Dashboard
+  const formatDateForInput = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const now = new Date();
+
+  const [timeFilter, setTimeFilter] = useState({
+    mode: 'all', // 'all' | 'year' | 'month' | 'week' | 'day' | 'custom'
+    year: now.getFullYear(),
+    month: now.getMonth(),
+    date: formatDateForInput(now),
+    customFrom: '',
+    customTo: ''
+  });
+
+  const availableYears = useMemo(() => {
+    const set = new Set([now.getFullYear()]);
+    [...expenses, ...incomes].forEach(item => {
+      const d = item.Expense_Date || item.Income_Date;
+      if (d) {
+        const yr = new Date(d).getFullYear();
+        if (!isNaN(yr)) set.add(yr);
+      }
+    });
+    return Array.from(set).sort((a, b) => b - a);
+  }, [expenses, incomes]);
+
+  // Toast Notification State
+  const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
+    setToast({ message, type });
     setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
+      setToast(null);
     }, 3000);
   };
 
-  const fetchData = async () => {
+  // Fetch initial data from Catalyst Serverless / CRM API
+  const fetchData = async (isSilent = false) => {
+    if (!isSilent) setIsRefreshing(true);
     try {
       // Fetch dynamic expenses
       const expResponse = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/expenses`);
@@ -101,16 +127,28 @@ function App() {
       } catch (err) {
         console.error("Error fetching current user details:", err);
       }
+
+      setLastSyncedTime(new Date());
     } catch (error) {
       console.error("Error fetching dynamic CRM data:", error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
+  // Initial load + 30s Auto-Refresh Interval
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(false);
+
+    const interval = setInterval(() => {
+      if (autoRefreshEnabled) {
+        fetchData(true); // Silent background fetch every 30 seconds
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [autoRefreshEnabled]);
 
   // CRUD Handlers
   const handleEditExpense = (record) => {
@@ -129,7 +167,7 @@ function App() {
           const data = await response.json();
           if (data.success) {
             showToast("Expense deleted successfully!", "success");
-            fetchData();
+            fetchData(false);
           } else {
             showToast("Failed to delete expense: " + (data.error || 'Unknown error'), "error");
           }
@@ -156,7 +194,7 @@ function App() {
           const data = await response.json();
           if (data.success) {
             showToast("Income deleted successfully!", "success");
-            fetchData();
+            fetchData(false);
           } else {
             showToast("Failed to delete income: " + (data.error || 'Unknown error'), "error");
           }
@@ -166,8 +204,6 @@ function App() {
       }
     });
   };
-
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const uniqueExpenseCategoriesCount = new Set(
     expenses.map(exp => exp.Expense_Type?.id).filter(Boolean)
@@ -190,6 +226,14 @@ function App() {
           currentView={currentView}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          timeFilter={timeFilter}
+          setTimeFilter={setTimeFilter}
+          availableYears={availableYears}
+          isRefreshing={isRefreshing}
+          onRefreshNow={() => fetchData(false)}
+          lastSyncedTime={lastSyncedTime}
+          autoRefreshEnabled={autoRefreshEnabled}
+          onToggleAutoRefresh={() => setAutoRefreshEnabled(prev => !prev)}
           onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
           onAddExpense={() => {
             setEditExpense(null);
@@ -209,6 +253,7 @@ function App() {
               expenses={expenses}
               incomes={incomes}
               searchQuery={searchQuery}
+              timeFilter={timeFilter}
               onEditExpense={handleEditExpense}
               onDeleteExpense={handleDeleteExpense}
               onEditIncome={handleEditIncome}
@@ -220,92 +265,77 @@ function App() {
               <ActivityGraph expenses={expenses} />
               <ExpenseList 
                 expenses={expenses} 
-                searchQuery={searchQuery}
-                isAllExpensesView={false} 
-                onEdit={handleEditExpense} 
-                onDelete={handleDeleteExpense} 
-                onViewAll={() => setCurrentView('all-expenses')}
+                searchQuery={searchQuery} 
+                onEditExpense={handleEditExpense} 
+                onDeleteExpense={handleDeleteExpense} 
               />
             </>
           ) : currentView === 'income-dashboard' ? (
             <>
               <IncomeStats incomes={incomes} />
-              <IncomeGraph incomes={incomes} />
               <IncomeList 
                 incomes={incomes} 
-                searchQuery={searchQuery}
-                isAllIncomesView={false} 
-                onEdit={handleEditIncome} 
-                onDelete={handleDeleteIncome} 
+                searchQuery={searchQuery} 
+                onEditIncome={handleEditIncome} 
+                onDeleteIncome={handleDeleteIncome} 
               />
             </>
           ) : (
-            <div className="all-expenses-view animate-fade-in">
-              <ExpenseList 
-                expenses={expenses} 
-                searchQuery={searchQuery}
-                isAllExpensesView={true} 
-                onEdit={handleEditExpense} 
-                onDelete={handleDeleteExpense} 
-              />
-            </div>
+            <ExpenseList 
+              expenses={expenses} 
+              searchQuery={searchQuery} 
+              onEditExpense={handleEditExpense} 
+              onDeleteExpense={handleDeleteExpense} 
+            />
           )}
         </div>
       </div>
 
-      <AddExpenseModal 
-        isOpen={isExpenseModalOpen} 
-        onClose={() => {
-          setIsExpenseModalOpen(false);
-          setEditExpense(null);
-        }} 
-        onSaveSuccess={fetchData}
-        editRecord={editExpense}
-        showToast={showToast}
-      />
-      <AddIncomeModal 
-        isOpen={isIncomeModalOpen} 
-        onClose={() => {
-          setIsIncomeModalOpen(false);
-          setEditIncome(null);
-        }} 
-        onSaveSuccess={fetchData}
-        editRecord={editIncome}
-        showToast={showToast}
-      />
+      {/* Add / Edit Expense Modal */}
+      {isExpenseModalOpen && (
+        <AddExpenseModal 
+          isOpen={isExpenseModalOpen}
+          onClose={() => setIsExpenseModalOpen(false)}
+          onSuccess={() => {
+            showToast(editExpense ? "Expense updated successfully!" : "Expense added successfully!", "success");
+            fetchData(false);
+          }}
+          editRecord={editExpense}
+        />
+      )}
 
-      {/* Premium Custom Toast Container */}
-      <div className="toast-container">
-        {toasts.map(t => (
-          <div key={t.id} className={`toast-card toast-${t.type}`}>
-            <i className={t.type === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-triangle'}></i>
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
+      {/* Add / Edit Income Modal */}
+      {isIncomeModalOpen && (
+        <AddIncomeModal 
+          isOpen={isIncomeModalOpen}
+          onClose={() => setIsIncomeModalOpen(false)}
+          onSuccess={() => {
+            showToast(editIncome ? "Income updated successfully!" : "Income added successfully!", "success");
+            fetchData(false);
+          }}
+          editRecord={editIncome}
+        />
+      )}
 
-      {/* Premium Custom Confirmation Modal */}
+      {/* Custom Global Confirm Modal */}
       {confirmData && (
-        <div className="modal-overlay" style={{ zIndex: 100000 }}>
-          <div className="modal-content animate-fade-in" style={{ width: '380px', textAlign: 'center', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-            <i className="ti ti-alert-triangle" style={{ fontSize: '38px', color: '#f85149', marginBottom: '12px', display: 'block' }}></i>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: 'var(--text)' }}>Confirm Action</h4>
-            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--text2)', lineHeight: '1.5' }}>
-              {confirmData.message}
-            </p>
-            <div className="modal-actions" style={{ justifyContent: 'center', gap: '12px' }}>
-              <button className="btn" onClick={() => setConfirmData(null)}>Cancel</button>
-              <button 
-                className="btn btn-danger" 
-                onClick={() => {
-                  confirmData.onConfirm();
-                  setConfirmData(null);
-                }}
-                style={{ background: '#f85149', borderColor: '#f85149', color: 'white' }}
-              >
-                Delete
-              </button>
-            </div>
+        <ConfirmModal
+          isOpen={!!confirmData}
+          message={confirmData.message}
+          onConfirm={() => {
+            confirmData.onConfirm();
+            setConfirmData(null);
+          }}
+          onCancel={() => setConfirmData(null)}
+        />
+      )}
+
+      {/* Toast Notification Card */}
+      {toast && (
+        <div className="toast-container">
+          <div className={`toast-card toast-${toast.type}`}>
+            <i className={toast.type === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-circle'}></i>
+            <span>{toast.message}</span>
           </div>
         </div>
       )}
