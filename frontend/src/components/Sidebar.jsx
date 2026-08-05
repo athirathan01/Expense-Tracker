@@ -1,7 +1,7 @@
 import React from 'react';
 import { API_BASE_URL } from '../config/api';
 
-const Sidebar = ({ currentView, onViewChange, expensesCount, categoriesCount, currentUser, isMobileOpen, onCloseMobile }) => {
+const Sidebar = ({ currentView, onViewChange, expensesCount, incomesCount, currentUser, isMobileOpen, onCloseMobile }) => {
   const getAvatarSrc = () => {
     if (!currentUser?.avatarUrl) return null;
     if (currentUser.avatarUrl.startsWith('http')) return currentUser.avatarUrl;
@@ -65,22 +65,19 @@ const Sidebar = ({ currentView, onViewChange, expensesCount, categoriesCount, cu
           >
             <i className="ti ti-coin"></i> Income Dashboard
           </div>
-          <div className="nav-item" onClick={() => handleNavClick('overall-dashboard')}>
-            <i className="ti ti-report-analytics"></i> Reports
-          </div>
           
-          <div className="nav-section" style={{ marginTop: '8px' }}>Expenses</div>
+          <div className="nav-section" style={{ marginTop: '12px' }}>Expenses & Transactions</div>
           <div 
             className={`nav-item ${currentView === 'all-expenses' ? 'active' : ''}`}
             onClick={() => handleNavClick('all-expenses')}
           >
             <i className="ti ti-list"></i> All Expenses <span className="badge">{expensesCount}</span>
           </div>
-          <div className="nav-item" onClick={() => handleNavClick('all-expenses')}>
-            <i className="ti ti-tags"></i> Categories <span className="badge">{categoriesCount}</span>
-          </div>
-          <div className="nav-item" onClick={() => handleNavClick('all-expenses')}>
-            <i className="ti ti-wallet"></i> Budgets
+          <div 
+            className={`nav-item ${currentView === 'all-incomes' ? 'active' : ''}`}
+            onClick={() => handleNavClick('all-incomes')}
+          >
+            <i className="ti ti-arrow-down-left"></i> All Incomes <span className="badge">{incomesCount}</span>
           </div>
         </nav>
         

@@ -47,6 +47,7 @@ const Topbar = ({
     if (currentView === 'dashboard') return 'Expense Dashboard';
     if (currentView === 'income-dashboard') return 'Income Dashboard';
     if (currentView === 'all-expenses') return 'All Expenses';
+    if (currentView === 'all-incomes') return 'All Incomes';
     return 'Overall Dashboard';
   };
 

@@ -215,7 +215,7 @@ function App() {
         currentView={currentView} 
         onViewChange={setCurrentView} 
         expensesCount={expenses.length}
-        categoriesCount={uniqueExpenseCategoriesCount}
+        incomesCount={incomes.length}
         currentUser={currentUser}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -280,6 +280,13 @@ function App() {
                 onDeleteIncome={handleDeleteIncome} 
               />
             </>
+          ) : currentView === 'all-incomes' ? (
+            <IncomeList 
+              incomes={incomes} 
+              searchQuery={searchQuery} 
+              onEditIncome={handleEditIncome} 
+              onDeleteIncome={handleDeleteIncome} 
+            />
           ) : (
             <ExpenseList 
               expenses={expenses} 
